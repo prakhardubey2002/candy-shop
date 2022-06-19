@@ -1,14 +1,12 @@
 import './card-payment-form.less';
 import React from 'react';
-import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { useElements, useStripe, CardCvcElement, CardNumberElement, CardExpiryElement } from '@stripe/react-stripe-js';
 import {
   CreatePaymentMethodCardData,
   CreatePaymentMethodData,
   PaymentMethod,
   PaymentMethodResult,
-  StripeCardNumberElementOptions,
-  StripeElementClasses,
-  StripeElementStyle
+  StripeCardNumberElementOptions
 } from '@stripe/stripe-js';
 import { ConfirmStripePaymentParams, PaymentMethodType } from '@liqnft/candy-shop-types';
 import { LoadingSkeleton } from 'components/LoadingSkeleton';
@@ -51,7 +49,7 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
   // TODO: Check element change to enable/disable Pay button
 
   const getConfirmPaymentParams = async () => {
-    const cardPaymentElement = stripeElements.getElement(PaymentMethodType.CARD);
+    const cardPaymentElement = stripeElements.getElement('cardNumber');
     if (!cardPaymentElement) {
       throw Error('Abort submit payment, StripePaymentElement is null');
     }
@@ -61,10 +59,10 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
     };
     const paymentMethod = await getPaymentMethod(paymentMethodData);
     const params: ConfirmStripePaymentParams = {
-      paymentId: paymentId,
+      paymentId,
       paymentMethodId: paymentMethod.id,
       shopId: shopAddress,
-      tokenAccount: tokenAccount
+      tokenAccount
     };
     return params;
   };
@@ -79,25 +77,45 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
       });
   };
 
-  // TODO: Customize CardElement styling by overriding stripe's style
-  const cardElementCustomClassName: StripeElementClasses = {
-    base: 'card-element-base-style'
-  };
-
-  const cardElementStyle: StripeElementStyle = {};
-  const cardElementOptions: StripeCardNumberElementOptions = {
-    showIcon: true,
-    classes: cardElementCustomClassName,
-    style: cardElementStyle
-  };
-
   return (
     <div className="card-payment-modal-container">
       <div className="candy-title">Credit Card</div>
-      <CardElement options={cardElementOptions}></CardElement>
+      <div className="stripe-input">
+        <CardNumberElement options={numberOptions} />
+      </div>
+      <div style={{ display: 'flex' }}>
+        <div className="stripe-input" style={{ width: '40%', marginRight: '8px' }}>
+          <CardExpiryElement options={expOptions} />
+        </div>
+        <div className="stripe-input" style={{ flexGrow: 1 }}>
+          <CardCvcElement />
+        </div>
+      </div>
       <button className="candy-button card-payment-modal-button" onClick={onClickedPay}>
         Pay
       </button>
     </div>
   );
+};
+
+// TODO: Customize CardElement styling by overriding stripe's style
+const numberOptions: StripeCardNumberElementOptions = {
+  placeholder: '0000-0000-0000-0000',
+  showIcon: true,
+  style: {
+    base: {
+      color: 'blue',
+      fontSize: '16px',
+      padding: '8px'
+    }
+  }
+};
+const expOptions: StripeCardNumberElementOptions = {
+  style: {
+    base: {
+      color: 'blue',
+      fontSize: '16px',
+      padding: '8px'
+    }
+  }
 };

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CandyShopPay, fetchNFTByMintAddress, getCandyShopSync } from '@liqnft/candy-shop-sdk';
+import { CandyShopPay, fetchNFTByMintAddress } from '@liqnft/candy-shop-sdk';
 import { Nft, Order as OrderSchema, SingleBase } from '@liqnft/candy-shop-types';
 import { web3 } from '@project-serum/anchor';
 import { Modal } from 'components/Modal';
@@ -23,6 +23,7 @@ export interface BuyModalDetailProps {
   shopPriceDecimalsMin: number;
   shopPriceDecimals: number;
   shopProgramId: string;
+  shopAddress: string;
   sellerUrl?: string;
 }
 
@@ -35,6 +36,7 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
   shopPriceDecimalsMin,
   shopPriceDecimals,
   shopProgramId,
+  shopAddress,
   sellerUrl
 }) => {
   const [loadingNftInfo, setLoadingNftInfo] = useState(false);
@@ -45,15 +47,9 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
 
   const stripePublicKey = useCandyShopPayContext()?.stripePublicKey;
 
-  const orderShopId = getCandyShopSync(
-    new web3.PublicKey(order.candyShopCreatorAddress),
-    new web3.PublicKey(order.treasuryMint),
-    new web3.PublicKey(order.programId)
-  )[0].toString();
-
   const getCreditCardPayAvailability = useCallback(() => {
     CandyShopPay.checkPaymentAvailability({
-      shopId: orderShopId,
+      shopId: shopAddress,
       tokenAccount: order.tokenAccount
     })
       .then((res: SingleBase<string>) => {
@@ -74,7 +70,7 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
         );
         setCreditCardPayAvailable(false);
       });
-  }, [order, orderShopId]);
+  }, [shopAddress, order]);
 
   useEffect(() => {
     getCreditCardPayAvailability();
@@ -149,7 +145,7 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
           <StripePayment
             stripePublicKey={stripePublicKey}
             shopProgramId={shopProgramId}
-            shopAddress={orderShopId}
+            shopAddress={shopAddress}
             walletAddress={walletPublicKey.toString()}
             order={order}
           ></StripePayment>
