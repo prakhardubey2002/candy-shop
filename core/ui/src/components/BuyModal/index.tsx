@@ -3,17 +3,26 @@ import { Order as OrderSchema } from '@liqnft/candy-shop-types';
 import { BN, web3 } from '@project-serum/anchor';
 import { AnchorWallet } from '@solana/wallet-adapter-react';
 import { Modal } from 'components/Modal';
+import { StripePayment } from 'components/Payment';
 import { PoweredByInBuyModal } from 'components/PoweredBy/PowerByInBuyModal';
 import { Processing } from 'components/Processing';
 import { TIMEOUT_EXTRA_LOADING } from 'constant';
+import { useCandyShopPayContext } from 'contexts/CandyShopPayProvider';
 import { useUnmountTimeout } from 'hooks/useUnmountTimeout';
-import { ShopExchangeInfo, TransactionState } from 'model';
+import { ShopExchangeInfo } from 'model';
 import React, { useState } from 'react';
 import { ErrorMsgMap, ErrorType, handleError } from 'utils/ErrorHandler';
 import { notification, NotificationType } from 'utils/rc-notification';
 import { BuyModalConfirmed } from './BuyModalConfirmed';
 import { BuyModalDetail } from './BuyModalDetail';
 import './style.less';
+
+enum ModalType {
+  DISPLAY,
+  PROCESSING,
+  CONFIRMED,
+  PAYMENT
+}
 
 export interface BuyModalProps {
   order: OrderSchema;
@@ -44,17 +53,19 @@ export const BuyModal: React.FC<BuyModalProps> = ({
   shopPriceDecimals,
   sellerUrl
 }) => {
-  const [state, setState] = useState<TransactionState>(TransactionState.DISPLAY);
+  const [state, setState] = useState<ModalType>(ModalType.DISPLAY);
   const [hash, setHash] = useState(''); // txHash
 
   const timeoutRef = useUnmountTimeout();
+
+  const stripePublicKey = useCandyShopPayContext()?.stripePublicKey;
 
   const buy = async () => {
     if (!wallet) {
       notification(ErrorMsgMap[ErrorType.InvalidWallet], NotificationType.Error);
       return;
     }
-    setState(TransactionState.PROCESSING);
+    setState(ModalType.PROCESSING);
 
     const tradeBuyParams: CandyShopTradeBuyParams = {
       tokenAccount: new web3.PublicKey(order.tokenAccount),
@@ -76,24 +87,20 @@ export const BuyModal: React.FC<BuyModalProps> = ({
         setHash(txHash);
         console.log('Buy order made with transaction hash', txHash);
         timeoutRef.current = setTimeout(() => {
-          setState(TransactionState.CONFIRMED);
+          setState(ModalType.CONFIRMED);
         }, TIMEOUT_EXTRA_LOADING);
       })
       .catch((err) => {
         console.log({ err });
         handleError({ error: err });
-        setState(TransactionState.DISPLAY);
+        setState(ModalType.DISPLAY);
       });
   };
-
+  const modalWidth = state === ModalType.DISPLAY || state === ModalType.PAYMENT ? 1000 : 600;
   return (
-    <Modal
-      className="candy-buy-modal-container"
-      onCancel={onClose}
-      width={state !== TransactionState.DISPLAY ? 600 : 1000}
-    >
+    <Modal className="candy-buy-modal-container" onCancel={onClose} width={modalWidth}>
       <div className="candy-buy-modal">
-        {state === TransactionState.DISPLAY && (
+        {state === ModalType.DISPLAY && (
           <BuyModalDetail
             order={order}
             buy={buy}
@@ -105,10 +112,11 @@ export const BuyModal: React.FC<BuyModalProps> = ({
             sellerUrl={sellerUrl}
             shopProgramId={candyShopProgramId.toString()}
             shopAddress={shopAddress.toString()}
+            onPayment={() => setState(ModalType.PAYMENT)}
           />
         )}
-        {state === TransactionState.PROCESSING && <Processing text="Processing purchase" />}
-        {state === TransactionState.CONFIRMED && wallet && (
+        {state === ModalType.PROCESSING && <Processing text="Processing purchase" />}
+        {state === ModalType.CONFIRMED && wallet && (
           <BuyModalConfirmed
             walletPublicKey={wallet.publicKey}
             order={order}
@@ -119,8 +127,20 @@ export const BuyModal: React.FC<BuyModalProps> = ({
             shopPriceDecimals={shopPriceDecimals}
           />
         )}
-      </div>
 
+        {state === ModalType.PAYMENT && stripePublicKey && wallet?.publicKey && order && (
+          <StripePayment
+            stripePublicKey={stripePublicKey}
+            shopProgramId={candyShopProgramId.toString()}
+            shopAddress={shopAddress.toString()}
+            walletAddress={wallet.publicKey.toString()}
+            order={order}
+            shopPriceDecimals={shopPriceDecimals}
+            shopPriceDecimalsMin={shopPriceDecimalsMin}
+            exchangeInfo={exchangeInfo}
+          />
+        )}
+      </div>
       <PoweredByInBuyModal />
     </Modal>
   );

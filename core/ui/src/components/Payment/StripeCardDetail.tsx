@@ -79,21 +79,34 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
 
   return (
     <div className="card-payment-modal-container">
-      <div className="candy-title">Credit Card</div>
+      <label>Credit Card Number*</label>
       <div className="stripe-input">
         <CardNumberElement options={numberOptions} />
       </div>
       <div style={{ display: 'flex' }}>
-        <div className="stripe-input" style={{ width: '40%', marginRight: '8px' }}>
-          <CardExpiryElement options={expOptions} />
+        <div style={{ width: '40%', marginRight: '8px' }}>
+          <label>Expiration Date*</label>
+          <div className="stripe-input">
+            <CardExpiryElement options={expOptions} />
+          </div>
         </div>
-        <div className="stripe-input" style={{ flexGrow: 1 }}>
-          <CardCvcElement />
+        <div style={{ flexGrow: 1 }}>
+          <label>CVC*</label>
+          <div className="stripe-input">
+            <CardCvcElement />
+          </div>
         </div>
       </div>
-      <button className="candy-button card-payment-modal-button" onClick={onClickedPay}>
-        Pay
-      </button>
+
+      <div className="candy-stripe-terms">
+        By proceeding with this transaction, I agree to the <span>CandyShop Terms & Conditions.</span> I acknowledge
+        that transactions on the blockchain are final and non-refundable.
+      </div>
+      <div className="card-payment-modal-button">
+        <button className="candy-button" onClick={onClickedPay}>
+          Confirm
+        </button>
+      </div>
     </div>
   );
 };

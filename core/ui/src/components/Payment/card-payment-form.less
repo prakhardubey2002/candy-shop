@@ -3,10 +3,21 @@
 .card-payment-modal-container {
   width: 100%;
   height: 100%;
+
+  label {
+    text-align: left;
+  }
 }
 
 .card-payment-modal-button {
-  margin-top: 24px;
+  display: flex;
+  flex-direction: row-reverse;
+
+  button {
+    margin-top: 24px;
+    padding: 10px 60px;
+    border-radius: 40px;
+  }
 }
 
 .stripe-input {
@@ -14,6 +25,7 @@
   border: 1px solid @primary-color;
   border-radius: 8px;
   margin-bottom: 8px;
+  height: 40px;
 }
 
 input,
