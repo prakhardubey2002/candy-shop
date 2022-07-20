@@ -22,6 +22,7 @@ import { Viewer } from 'components/Viewer';
 import { NftVerification } from 'components/Tooltip/NftVerification';
 import { getPrice } from 'utils/getPrice';
 import stripeLogo from '../../assets/stripe.png';
+import { ModalType } from 'constant/Orders';
 
 const Logger = 'CandyShopUI/StripePayment';
 
@@ -34,6 +35,7 @@ interface StripePaymentProps {
   exchangeInfo: ShopExchangeInfo;
   shopPriceDecimalsMin: number;
   shopPriceDecimals: number;
+  onProcessingPay: (type: ModalType) => void;
 }
 
 export const StripePayment: React.FC<StripePaymentProps> = ({
@@ -44,14 +46,14 @@ export const StripePayment: React.FC<StripePaymentProps> = ({
   order,
   shopPriceDecimals,
   shopPriceDecimalsMin,
-  exchangeInfo
+  exchangeInfo,
+  onProcessingPay
 }) => {
   const stripePromise = loadStripe(stripePublicKey);
   const [paymentId, setPaymentId] = useState<string>();
   const [nftPaymentStatus, setNFTPaymentStatus] = useState<NFTPaymentStatus>(NFTPaymentStatus.Init);
-  const [failReason, setFailReason] = useState<string>();
   // TODO: Backend needs to provide an API to get USD currencyAmount from current order's price
-  const [currencyAmount, setCurrencyAmount] = useState<number>(500);
+  const [currencyAmount] = useState<number>(500);
 
   const timeoutRef = useUnmountTimeout();
 
@@ -90,32 +92,29 @@ export const StripePayment: React.FC<StripePaymentProps> = ({
     }
   }, [nftPaymentStatus, initCardPayment]);
 
-  const onCancelPayment = () => {
-    console.log('debugger: closing StripePayment');
-  };
-
-  const onClickedPay = (params: ConfirmStripePaymentParams) => {
+  const onClickedPayCallback = (params: ConfirmStripePaymentParams) => {
     setNFTPaymentStatus(NFTPaymentStatus.Processing);
     CandyShopPay.confirmPayment(params)
       .then((res: SingleBase<PaymentIntentInfo>) => {
         console.log('debugger: confirmPayment res=', res);
         if (res.success && res.result) {
+          onProcessingPay(ModalType.CONFIRMED);
           timeoutRef.current = setTimeout(() => {
             setNFTPaymentStatus(NFTPaymentStatus.Succeed);
           }, TIMEOUT_EXTRA_LOADING);
           console.log(`${Logger}: confirmPayment success=`, res.result);
         } else {
+          onProcessingPay(ModalType.PAYMENT);
           setNFTPaymentStatus(NFTPaymentStatus.Failed);
           console.log(`${Logger}: confirmPayment failed, reason=`, res.msg);
           if (res.msg) {
-            setFailReason(res.msg);
             notification(res.msg, NotificationType.Error, 5);
           }
         }
       })
       .catch((err: Error) => {
         setNFTPaymentStatus(NFTPaymentStatus.Failed);
-        setFailReason(err.message);
+        onProcessingPay(ModalType.PAYMENT);
         console.log(`${Logger}: handleCreatePayment failed, err=`, err);
         notification(err.message, NotificationType.Error, 5);
       });
@@ -164,19 +163,14 @@ export const StripePayment: React.FC<StripePaymentProps> = ({
                   paymentId={paymentId}
                   shopAddress={shopAddress}
                   tokenAccount={order.tokenAccount}
-                  onClickedPayCallback={onClickedPay}
+                  onClickedPayCallback={onClickedPayCallback}
+                  onProcessingPay={onProcessingPay}
                 />
               </Elements>
-            ) : null}
+            ) : (
+              <Processing />
+            )}
           </div>
-        </div>
-      )}
-      {nftPaymentStatus === NFTPaymentStatus.Processing && <Processing text="Processing credit card payment" />}
-      {nftPaymentStatus === NFTPaymentStatus.Succeed && <div>Credit Card Confirmed</div>}
-      {nftPaymentStatus === NFTPaymentStatus.Failed && (
-        <div>
-          <div>Payment Failed</div>
-          {failReason && <div> Reason: {failReason} </div>}
         </div>
       )}
     </>

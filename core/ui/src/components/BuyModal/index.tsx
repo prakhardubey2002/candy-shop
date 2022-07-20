@@ -15,13 +15,12 @@ import { ErrorMsgMap, ErrorType, handleError } from 'utils/ErrorHandler';
 import { notification, NotificationType } from 'utils/rc-notification';
 import { BuyModalConfirmed } from './BuyModalConfirmed';
 import { BuyModalDetail } from './BuyModalDetail';
+import { ModalType } from 'constant/Orders';
 import './style.less';
 
-enum ModalType {
-  DISPLAY,
-  PROCESSING,
-  CONFIRMED,
-  PAYMENT
+enum ProcessingText {
+  BUY = 'Processing purchase',
+  STRIPE = 'Processing purchase, do not close the window...'
 }
 
 export interface BuyModalProps {
@@ -53,12 +52,13 @@ export const BuyModal: React.FC<BuyModalProps> = ({
   shopPriceDecimals,
   sellerUrl
 }) => {
-  const [state, setState] = useState<ModalType>(ModalType.DISPLAY);
+  const [state, setState] = useState<ModalType>(ModalType.CONFIRMED);
   const [hash, setHash] = useState(''); // txHash
 
   const timeoutRef = useUnmountTimeout();
-
   const stripePublicKey = useCandyShopPayContext()?.stripePublicKey;
+  const [processingText, setProcessingText] = useState<ProcessingText>(ProcessingText.BUY);
+  const [paymentPrice, setPaymentPrice] = useState<number | undefined>(10);
 
   const buy = async () => {
     if (!wallet) {
@@ -96,6 +96,19 @@ export const BuyModal: React.FC<BuyModalProps> = ({
         setState(ModalType.DISPLAY);
       });
   };
+
+  const onProcessingPay = (type: ModalType, paymentPrice?: number) => {
+    if (type === ModalType.PROCESSING) {
+      setProcessingText(ProcessingText.STRIPE);
+      setState(ModalType.PROCESSING);
+      return;
+    }
+    if (type === ModalType.CONFIRMED) {
+      setState(ModalType.CONFIRMED);
+      setPaymentPrice(paymentPrice);
+    }
+  };
+
   const modalWidth = state === ModalType.DISPLAY || state === ModalType.PAYMENT ? 1000 : 600;
   return (
     <Modal className="candy-buy-modal-container" onCancel={onClose} width={modalWidth}>
@@ -115,7 +128,11 @@ export const BuyModal: React.FC<BuyModalProps> = ({
             onPayment={() => setState(ModalType.PAYMENT)}
           />
         )}
-        {state === ModalType.PROCESSING && <Processing text="Processing purchase" />}
+        {state === ModalType.PROCESSING && <Processing text={processingText} />}
+
+        {
+          // TODO: update payment fail on confirmed modal
+        }
         {state === ModalType.CONFIRMED && wallet && (
           <BuyModalConfirmed
             walletPublicKey={wallet.publicKey}
@@ -125,6 +142,7 @@ export const BuyModal: React.FC<BuyModalProps> = ({
             exchangeInfo={exchangeInfo}
             shopPriceDecimalsMin={shopPriceDecimalsMin}
             shopPriceDecimals={shopPriceDecimals}
+            paymentPrice={paymentPrice}
           />
         )}
 
@@ -138,6 +156,7 @@ export const BuyModal: React.FC<BuyModalProps> = ({
             shopPriceDecimals={shopPriceDecimals}
             shopPriceDecimalsMin={shopPriceDecimalsMin}
             exchangeInfo={exchangeInfo}
+            onProcessingPay={onProcessingPay}
           />
         )}
       </div>

@@ -35,7 +35,15 @@ export const MarketplaceExample: React.FC<MarketplaceExampleProps> = ({ candySho
         search
       />
 
-      <h1 style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 30 }}>Order Detail</h1>
+      <h1 style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 30 }}>Sell</h1>
+      <Sell
+        wallet={wallet}
+        candyShop={candyShop}
+        walletConnectComponent={<WalletMultiButton />}
+        enableCacheNFT={true}
+      />
+
+      {/* <h1 style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 30 }}>Order Detail</h1>
       <OrderDetail
         tokenMint={'Aj1k5FNSCkagdtEwjYzpKV47SGokioyCCy2XtqZ9t38G'}
         backUrl={'/'}
@@ -53,7 +61,7 @@ export const MarketplaceExample: React.FC<MarketplaceExampleProps> = ({ candySho
       />
 
       <h1 style={{ textAlign: 'center', fontWeight: 'bold', margin: '80px 0 30px' }}>Activity</h1>
-      <Activity candyShop={candyShop} orderBy={ORDER_ACTIVITY} />
+      <Activity candyShop={candyShop} orderBy={ORDER_ACTIVITY} /> */}
     </div>
   );
 };

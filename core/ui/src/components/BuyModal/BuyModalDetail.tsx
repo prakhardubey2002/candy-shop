@@ -10,6 +10,7 @@ import { Viewer } from 'components/Viewer';
 
 import { ShopExchangeInfo } from 'model';
 import { getPrice } from 'utils/getPrice';
+import { Processing } from 'components/Processing';
 
 const Logger = 'CandyShopUI/BuyModalDetail';
 
@@ -43,6 +44,7 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
   const [nftInfo, setNftInfo] = useState<Nft>();
 
   const [creditCardPayAvailable, setCreditCardPayAvailable] = useState<boolean>(false);
+  const [loadPrice, setLoadPrice] = useState<boolean>(false);
 
   const getCreditCardPayAvailability = useCallback(() => {
     CandyShopPay.checkPaymentAvailability({
@@ -83,6 +85,38 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
       });
   }, [order.tokenMint, getCreditCardPayAvailability]);
 
+  useEffect(() => {
+    if (!creditCardPayAvailable) return;
+
+    const el = document.getElementById('stripe-timeout');
+    if (!el) return;
+
+    let time = 2;
+    let timeout: any;
+    const callback = () => {
+      timeout = setTimeout(() => {
+        el.innerText = `(${time.toString()}s)`;
+        if (time === 0) {
+          // handle api here
+          setLoadPrice(true);
+          fakeCheckApi().then(() => {
+            callback();
+            setLoadPrice(false);
+          });
+          time = 3;
+        } else {
+          callback();
+          time--;
+        }
+      }, 1000);
+    };
+
+    callback();
+    return () => {
+      clearInterval(timeout);
+    };
+  }, [creditCardPayAvailable]);
+
   const orderPrice = getPrice(shopPriceDecimalsMin, shopPriceDecimals, order, exchangeInfo);
 
   return (
@@ -98,18 +132,33 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
         <div className="candy-buy-modal-control">
           <div>
             <div className="candy-label">PRICE</div>
-            <div className="candy-price">{orderPrice ? `${orderPrice} ${exchangeInfo.symbol}` : 'N/A'}</div>
+            <div className="candy-price">
+              {orderPrice ? `${orderPrice} ${exchangeInfo.symbol}` : 'N/A'}
+
+              {creditCardPayAvailable ? (
+                loadPrice ? (
+                  <Processing />
+                ) : (
+                  <span className="candy-price-timeout">
+                    <span className="candy-price-usd">&nbsp;| $ 81.28 USD</span>
+                    <span id="stripe-timeout">(3s)</span>
+                  </span>
+                )
+              ) : null}
+            </div>
           </div>
           {walletPublicKey && (
             <div>
               <button className="candy-button candy-buy-modal-button" onClick={buy}>
                 Buy Now
               </button>
-              {creditCardPayAvailable && (
-                <button className="candy-button candy-pay-credit-button" onClick={onPayment}>
-                  Buy with Credit Card
-                </button>
-              )}
+
+              <button
+                className={`candy-button candy-pay-credit-button ${creditCardPayAvailable ? '' : 'disabled'}`}
+                onClick={() => creditCardPayAvailable && onPayment()}
+              >
+                Buy with Credit Card
+              </button>
             </div>
           )}
           {!walletPublicKey && walletConnectComponent}
@@ -131,3 +180,5 @@ export const BuyModalDetail: React.FC<BuyModalDetailProps> = ({
     </>
   );
 };
+
+const fakeCheckApi = () => new Promise((resolve) => setTimeout(() => resolve(''), 2_000));

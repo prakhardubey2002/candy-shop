@@ -1,14 +1,19 @@
 @import '../../variable.less';
 
+#stripe-timeout {
+  font-size: 10px;
+  margin-left: 4px;
+  vertical-align: bottom;
+}
+
+.candy-price-usd {
+  color: @gray-medium;
+  font-weight: 600;
+  font-size: 18px;
+}
 .candy-buy-stripe {
   .candy-label {
     margin-top: 20px;
-  }
-
-  .candy-price-usd {
-    color: @gray-medium;
-    font-weight: 600;
-    font-size: 18px;
   }
 
   .candy-stripe-note {
@@ -17,7 +22,7 @@
 
   .candy-stripe-terms {
     margin: 20px 0;
-    span {
+    a {
       color: @primary-color;
     }
   }
@@ -41,6 +46,19 @@
     margin-top: 10px;
     margin-bottom: 15px;
     text-align: left;
+  }
+
+  @media @desktopXM {
+    .candy-stripe-block {
+      padding: 5px 10px;
+      margin-bottom: 5px;
+    }
+    .candy-stripe-logo {
+      margin: 0 0 10px;
+    }
+    .candy-stripe-terms {
+      margin: 0;
+    }
   }
 }
 
@@ -120,6 +138,35 @@
         &:hover {
           opacity: 0.6;
         }
+
+        &.disabled {
+          border-color: @gray-medium;
+          background: #e0e0e0;
+          pointer-events: none;
+          color: @gray-medium;
+        }
+      }
+
+      .candy-price {
+        display: flex;
+        align-items: center;
+        width: max-content;
+
+        .candy-price-timeout {
+          min-width: 150px;
+        }
+
+        .candy-processing {
+          min-width: 150px;
+          margin: 0;
+          padding-left: 16px;
+
+          .candy-loading {
+            width: 8px;
+            height: 8px;
+            margin: 0;
+          }
+        }
       }
     }
   }
@@ -128,6 +175,15 @@
     font-weight: bold;
     font-size: 16px;
     line-height: 24px;
+  }
+  .candy-payment-confirmed-price {
+    margin-left: 4px;
+    color: @gray-medium;
+    font-weight: 600;
+    font-size: 14px;
+    > span {
+      font-size: 12px;
+    }
   }
 
   .candy-buy-modal-confirmed {

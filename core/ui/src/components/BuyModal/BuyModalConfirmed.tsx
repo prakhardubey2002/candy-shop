@@ -17,6 +17,7 @@ interface BuyModalConfirmedProps {
   exchangeInfo: ShopExchangeInfo;
   shopPriceDecimalsMin: number;
   shopPriceDecimals: number;
+  paymentPrice?: number;
 }
 
 export const BuyModalConfirmed: React.FC<BuyModalConfirmedProps> = ({
@@ -26,7 +27,8 @@ export const BuyModalConfirmed: React.FC<BuyModalConfirmedProps> = ({
   onClose,
   exchangeInfo,
   shopPriceDecimalsMin,
-  shopPriceDecimals
+  shopPriceDecimals,
+  paymentPrice
 }) => {
   const walletAddress = walletPublicKey?.toBase58();
 
@@ -47,8 +49,11 @@ export const BuyModalConfirmed: React.FC<BuyModalConfirmedProps> = ({
             <div className="candy-buy-modal-name">{order?.name}</div>
             <div className="candy-buy-modal-ticker">{order?.ticker}</div>
           </div>
-          <div>
+          <div style={{ display: 'flex' }}>
             <div className="candy-buy-modal-price">{orderPrice ? `${orderPrice} ${exchangeInfo.symbol}` : 'N/A'}</div>
+            <span className="candy-payment-confirmed-price">
+              ~$ <span>{paymentPrice} USD</span>
+            </span>
           </div>
         </div>
       </div>

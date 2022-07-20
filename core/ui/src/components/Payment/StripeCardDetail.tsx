@@ -1,5 +1,5 @@
 import './card-payment-form.less';
-import React from 'react';
+import React, { useState } from 'react';
 import { useElements, useStripe, CardCvcElement, CardNumberElement, CardExpiryElement } from '@stripe/react-stripe-js';
 import {
   CreatePaymentMethodCardData,
@@ -8,8 +8,9 @@ import {
   PaymentMethodResult,
   StripeCardNumberElementOptions
 } from '@stripe/stripe-js';
-import { ConfirmStripePaymentParams, PaymentMethodType } from '@liqnft/candy-shop-types';
+import { ConfirmStripePaymentParams } from '@liqnft/candy-shop-types';
 import { LoadingSkeleton } from 'components/LoadingSkeleton';
+import { ModalType } from 'constant/Orders';
 
 const Logger = 'CandyShopUI/CardPaymentModal';
 
@@ -18,14 +19,19 @@ export interface StripeCardDetailProps {
   shopAddress: string;
   tokenAccount: string;
   onClickedPayCallback: (param: ConfirmStripePaymentParams) => void;
+  onProcessingPay: (type: ModalType) => void;
 }
 
 export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
   paymentId,
   shopAddress,
   tokenAccount,
-  onClickedPayCallback
+  onClickedPayCallback,
+  onProcessingPay
 }) => {
+  const [name, setName] = useState<string>();
+  const [email, setEmail] = useState<string>();
+
   const stripe = useStripe();
   const stripeElements = useElements();
 
@@ -67,10 +73,11 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
     return params;
   };
 
-  const onClickedPay = () => {
+  const onPay = () => {
     getConfirmPaymentParams()
       .then((res: ConfirmStripePaymentParams) => {
         onClickedPayCallback(res);
+        onProcessingPay(ModalType.PROCESSING);
       })
       .catch((err: Error) => {
         console.log(`${Logger}: getConfirmPaymentParams failed, err=`, err);
@@ -79,10 +86,30 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
 
   return (
     <div className="card-payment-modal-container">
+      <label htmlFor="stripe-name">Name</label>
+      <div className="candy-stripe-input">
+        <input
+          id="stripe-name"
+          placeholder={`Enter your name`}
+          onChange={(e: any) => setName(e.target.value)}
+          value={name}
+        />
+      </div>
+
+      <label htmlFor="stripe-email">Email Address</label>
+      <div className="candy-stripe-input">
+        <input
+          id="stripe-email"
+          placeholder={`Enter your email`}
+          onChange={(e: any) => setEmail(e.target.value)}
+          value={email}
+        />
+      </div>
       <label>Credit Card Number*</label>
       <div className="stripe-input">
         <CardNumberElement options={numberOptions} />
       </div>
+
       <div style={{ display: 'flex' }}>
         <div style={{ width: '40%', marginRight: '8px' }}>
           <label>Expiration Date*</label>
@@ -99,11 +126,14 @@ export const StripeCardDetail: React.FC<StripeCardDetailProps> = ({
       </div>
 
       <div className="candy-stripe-terms">
-        By proceeding with this transaction, I agree to the <span>CandyShop Terms & Conditions.</span> I acknowledge
-        that transactions on the blockchain are final and non-refundable.
+        By proceeding with this transaction, I agree to the{' '}
+        <a href="https://google.com" target="_blank" rel="noreferrer noopener">
+          CandyShop Terms & Conditions.
+        </a>{' '}
+        I acknowledge that transactions on the blockchain are final and non-refundable.
       </div>
       <div className="card-payment-modal-button">
-        <button className="candy-button" onClick={onClickedPay}>
+        <button className="candy-button" onClick={onPay}>
           Confirm
         </button>
       </div>
